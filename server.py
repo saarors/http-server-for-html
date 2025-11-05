@@ -1,36 +1,25 @@
-import socket
-import os
-
-def handle_request(client_socket, file_path):
+def handle_request(client_socket):
     request = client_socket.recv(1024).decode('utf-8')
     
-    if "GET" in request:
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as file:
+    if "GET /index.html" in request:
+        try:
+            with open("index.html", "r") as file:
                 html_content = file.read()
-            response = f"""HTTP/1.1 200 OK
-Content-Type: text/html; charset=UTF-8
+            response = f"HTTP/1.1 200 OK\nContent-Type: text/html; charset=UTF-8\n\n{html_content}"
+        except FileNotFoundError:
+            response = "HTTP/1.1 404 Not Found\n\n<html><body><h1>404 Not Found</h1></body></html>"
+    else:
+        response = "HTTP/1.1 400 Bad Request\n\n<html><body><h1>400 Bad Request</h1></body></html>"
 
-{html_content}
-"""
-        else:
-            response = """HTTP/1.1 404 Not Found
-Content-Type: text/html; charset=UTF-8
-
-<html><body><h1>404 Not Found</h1></body></html>
-"""
-        client_socket.sendall(response.encode('utf-8'))
+    client_socket.sendall(response.encode('utf-8'))
     client_socket.close()
 
-def create_http_server(host, port, file_path):
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((host, port))
-    server_socket.listen(1)
-    
-    print(f"Server running at http://{host}:{port}")
-    
-    while True:
-        client_socket, client_address = server_socket.accept()
-        handle_request(client_socket, file_path)
+def create_simple_server(host, port):
+    with open(f"/dev/tcp/{host}/{port}", 'r+') as server_socket:
+        print(f"Server running at http://{host}:{port}")
 
-create_http_server("127.0.0.1", 8080, "index.html")
+        while True:
+            client_socket, _ = server_socket.accept()
+            handle_request(client_socket)
+
+create_simple_server("127.0.0.1", 8080)
