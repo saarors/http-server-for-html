@@ -24,3 +24,4 @@ python3 httpserverhtml.py
 Open your browser at 127.0.0.1:8080
 
  
+Note: Only works on Linux
